@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ton Format Signature — Kalanis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:    #FAF9F2;
+    --ink:   #121C28;
+    --blue:  #018EBB;
+    --body:  #2D3748;
+    --muted: #718096;
+    --r:     14px;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    font-family: 'Parkinsans', sans-serif;
+    color: var(--body);
+  }
+
+  .blob {
+    position: fixed; border-radius: 50%;
+    background: var(--blue); filter: blur(110px);
+    opacity: .18; pointer-events: none; z-index: 0;
+  }
+  .b1 { width: 480px; height: 480px; top: -140px; right: -120px; }
+  .b2 { width: 360px; height: 360px; bottom: -80px; left: -80px; }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px; opacity: .10;
+  }
+
+  .wrapper {
+    position: relative; z-index: 2;
+    min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 3rem 1rem 4rem;
+  }
+
+  .card {
+    width: 100%; max-width: 640px;
+    background: var(--bg);
+    border: 10px solid rgba(18,28,40,.08);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  .prog-wrap { height: 4px; background: rgba(18,28,40,.07); }
+  .prog-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .5s cubic-bezier(.16,1,.3,1); }
+
+  .screen { display: none; padding: 2.5rem 2.2rem; }
+  .screen.active { display: block; animation: fadeUp .45s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  .phase-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--ink); color: #fff;
+    border-radius: 20px; padding: 4px 14px;
+    font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  .phase-badge.blue { background: var(--blue); }
+  .phase-badge.success { background: #16A34A; }
+
+  h1 { font-size: 1.7rem; font-weight: 800; color: var(--ink); line-height: 1.15; margin-bottom: .5rem; }
+  h2 { font-size: 1.4rem; font-weight: 800; color: var(--ink); line-height: 1.2; margin-bottom: .5rem; }
+  .sub { font-size: .9rem; color: var(--muted); line-height: 1.65; margin-bottom: 1.8rem; }
+
+  .q-block { margin-bottom: 1.4rem; }
+  .q-label { display: block; font-size: .82rem; font-weight: 700; color: var(--ink); margin-bottom: .3rem; }
+  .q-hint { font-size: .77rem; color: var(--muted); margin-bottom: .5rem; font-style: italic; }
+
+  input[type="text"], input[type="email"], textarea {
+    width: 100%; background: #fff;
+    border: 1.5px solid rgba(18,28,40,.13);
+    border-radius: var(--r); padding: 11px 15px;
+    font-family: inherit; font-size: .87rem; color: var(--ink);
+    outline: none; transition: border-color .2s;
+  }
+  input[type="text"]:focus, input[type="email"]:focus, textarea:focus { border-color: var(--blue); }
+  input::placeholder, textarea::placeholder { color: #a0aec0; }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1.4rem; }
+
+  .divider { height: 1px; background: rgba(18,28,40,.07); margin: 1.5rem 0; }
+
+  .btn-primary {
+    width: 100%; background: var(--ink); color: #fff;
+    border: none; border-radius: var(--r);
+    padding: 14px; font-family: inherit; font-size: .92rem; font-weight: 700;
+    cursor: pointer; transition: opacity .2s; margin-top: .5rem;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-blue {
+    flex: 1; background: var(--blue); color: #fff;
+    border: none; border-radius: var(--r);
+    padding: 14px; font-family: inherit; font-size: .92rem; font-weight: 700;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn-blue:hover { opacity: .88; }
+  .btn-row { display: flex; gap: .7rem; margin-top: .5rem; }
+  .btn-back {
+    background: transparent; color: var(--muted);
+    border: 1.5px solid rgba(18,28,40,.12);
+    border-radius: var(--r); padding: 13px 20px;
+    font-family: inherit; font-size: .87rem; font-weight: 600;
+    cursor: pointer; transition: all .18s; flex-shrink: 0;
+  }
+  .btn-back:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-copy {
+    width: 100%; background: transparent; color: var(--blue);
+    border: 1.5px solid var(--blue); border-radius: var(--r); padding: 13px;
+    font-family: inherit; font-size: .88rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; margin-top: .6rem;
+  }
+  .btn-copy:hover { background: rgba(1,142,187,.07); }
+
+  /* ── Cover steps ── */
+  .cover-icon { font-size: 3rem; margin-bottom: 1.2rem; }
+  .cover-steps { display: flex; flex-direction: column; gap: .6rem; margin: 1.6rem 0 1.8rem; }
+  .cover-step {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1.5px solid rgba(18,28,40,.08);
+    border-radius: var(--r); padding: 12px 15px;
+  }
+  .step-num {
+    width: 28px; height: 28px; background: var(--ink); color: #fff;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 800; flex-shrink: 0;
+  }
+  .step-text { font-size: .87rem; color: var(--body); font-weight: 500; }
+
+  /* ── Recall cards ── */
+  .recall-section { margin-bottom: 1.4rem; }
+  .recall-label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--blue); margin-bottom: .6rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .recall-label::before { content: ''; display: block; width: 3px; height: 14px; background: var(--blue); border-radius: 2px; }
+  .recall-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .recall-chip {
+    background: rgba(1,142,187,.08); border: 1.5px solid rgba(1,142,187,.2);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: .82rem; font-weight: 600; color: var(--ink);
+  }
+  .recall-box {
+    background: rgba(1,142,187,.06); border: 1.5px solid rgba(1,142,187,.15);
+    border-radius: var(--r); padding: 12px 15px;
+    font-size: .87rem; color: var(--ink); line-height: 1.55; font-weight: 500;
+  }
+
+  /* ── Checklist ── */
+  .check-list { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1.4rem; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: #fff; border: 1.5px solid rgba(18,28,40,.1);
+    border-radius: var(--r); padding: 14px 16px;
+    cursor: pointer; transition: all .18s;
+  }
+  .check-item.checked { border-color: var(--blue); background: rgba(1,142,187,.05); }
+  .check-box {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid rgba(18,28,40,.2); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .18s; margin-top: 1px;
+  }
+  .check-item.checked .check-box { background: var(--blue); border-color: var(--blue); }
+  .check-icon { display: none; color: #fff; font-size: 13px; font-weight: 800; }
+  .check-item.checked .check-icon { display: block; }
+  .check-text { font-size: .87rem; color: var(--body); line-height: 1.5; }
+  .check-text strong { color: var(--ink); }
+
+  .test-result {
+    border-radius: var(--r); padding: 14px 18px;
+    font-size: .88rem; font-weight: 700; text-align: center;
+    margin-bottom: 1.2rem; display: none;
+  }
+  .test-result.pass { background: rgba(22,163,74,.08); border: 1.5px solid rgba(22,163,74,.3); color: #16A34A; display: block; }
+  .test-result.partial { background: rgba(234,88,12,.07); border: 1.5px solid rgba(234,88,12,.2); color: #EA580C; display: block; }
+
+  /* ── Synthèse finale ── */
+  .synth-card {
+    background: var(--ink); border-radius: 18px;
+    padding: 28px 26px; margin-bottom: 1.2rem;
+    position: relative; overflow: hidden;
+  }
+  .synth-blob {
+    position: absolute; border-radius: 50%;
+    background: var(--blue); filter: blur(60px); opacity: .3; pointer-events: none;
+  }
+  .synth-blob-1 { width: 200px; height: 200px; top: -60px; right: -40px; }
+  .synth-blob-2 { width: 150px; height: 150px; bottom: -40px; left: -30px; }
+  .synth-label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: rgba(255,255,255,.5);
+    margin-bottom: 4px; position: relative; z-index: 2;
+  }
+  .synth-name {
+    font-size: 2rem; font-weight: 800; color: #fff; line-height: 1.1;
+    margin-bottom: 20px; position: relative; z-index: 2;
+  }
+  .synth-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 12px; position: relative; z-index: 2;
+  }
+  .synth-row:last-child { margin-bottom: 0; }
+  .synth-tag {
+    background: rgba(1,142,187,.25); color: var(--blue);
+    border-radius: 8px; padding: 3px 10px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    flex-shrink: 0; margin-top: 2px; white-space: nowrap;
+  }
+  .synth-val { font-size: .88rem; color: rgba(255,255,255,.82); line-height: 1.5; }
+
+  .formula-box {
+    background: rgba(1,142,187,.08); border: 1.5px solid rgba(1,142,187,.25);
+    border-radius: var(--r); padding: 16px 18px;
+    font-size: .92rem; font-weight: 600; color: var(--ink);
+    line-height: 1.6; margin-bottom: 1.2rem; font-style: italic;
+  }
+
+  /* ── Saving indicator ── */
+  .saving-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .78rem; color: var(--muted); margin-bottom: 1rem;
+  }
+  .saving-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #16A34A; flex-shrink: 0;
+  }
+  .saving-dot.loading {
+    background: var(--blue);
+    animation: pulse .8s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="grain"></div>
+
+<div class="wrapper">
+  <div class="card">
+    <div class="prog-wrap">
+      <div class="prog-fill" id="prog" style="width: 0%;"></div>
+    </div>
+
+    <!-- ══════════════════ COVER ══════════════════ -->
+    <div class="screen active" id="s-cover">
+      <div class="cover-icon">🔍</div>
+      <div class="phase-badge blue">Exercice Kalanis</div>
+      <h1>Trouve ton<br>Format Signature</h1>
+      <p class="sub">Un format signature, c'est un format que toi seul peux faire sans que ça sonne faux. En 15 minutes, on creuse ton univers pour le trouver.</p>
+
+      <div class="input-row">
+        <div>
+          <label class="q-label">Ton prénom</label>
+          <input type="text" id="cover-prenom" placeholder="Marie" />
+        </div>
+        <div>
+          <label class="q-label">Ton email</label>
+          <input type="email" id="cover-email" placeholder="marie@example.com" />
+        </div>
+      </div>
+
+      <div class="cover-steps">
+        <div class="cover-step">
+          <div class="step-num">01</div>
+          <div class="step-text"><strong>Ton univers</strong> — tes passions, ton vocabulaire naturel</div>
+        </div>
+        <div class="cover-step">
+          <div class="step-num">02</div>
+          <div class="step-text"><strong>Ton expertise distillée</strong> — ce que tu corriges et transformes</div>
+        </div>
+        <div class="cover-step">
+          <div class="step-num">03</div>
+          <div class="step-text"><strong>Le pont</strong> — relier ton univers à ton expertise</div>
+        </div>
+        <div class="cover-step">
+          <div class="step-num">04</div>
+          <div class="step-text"><strong>Le test</strong> — valider que le format est vraiment le tien</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="startWorkbook()">Commencer →</button>
+    </div>
+
+    <!-- ══════════════════ PHASE 1 ══════════════════ -->
+    <div class="screen" id="s-p1">
+      <div class="phase-badge">Phase 01 / 04</div>
+      <h2>Ton univers</h2>
+      <p class="sub">On creuse d'abord qui tu es en dehors du boulot. Réponds sans te censurer — c'est dans les choses les plus simples que se cachent les meilleures idées.</p>
+
+      <div class="q-block">
+        <label class="q-label">Quelles sont tes passions ou obsessions en dehors du travail ?</label>
+        <div class="q-hint">Liste tout ce qui te vient — sport, séries, cuisine, jeux, musique...</div>
+        <textarea id="p1-passions" placeholder="Ex : le foot, l'OM, les jeux de plateau, la cuisine japonaise, les séries policières..."></textarea>
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Tes amis te décriraient comment en dehors du boulot ?</label>
+        <div class="q-hint">"C'est lui/elle le grand fan de..."</div>
+        <input type="text" id="p1-amis" placeholder="Ex : c'est lui le grand fan de l'OM, il connaît toutes les stats..." />
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Quand tu dois expliquer un truc complexe, tu pars naturellement sur quelle analogie ?</label>
+        <div class="q-hint">Sans réfléchir, quelle métaphore sort en premier ?</div>
+        <input type="text" id="p1-analogie" placeholder="Ex : je compare souvent ça à un match de foot, à une recette de cuisine..." />
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Quel vocabulaire de tes passions revient dans ta façon de parler ?</label>
+        <div class="q-hint">Des mots ou expressions que tu utilises sans t'en rendre compte</div>
+        <input type="text" id="p1-vocab" placeholder='Ex : "c&apos;est un vrai carton rouge", "on passe en mise en bouche"...' />
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Tu consommes quoi le plus en dehors du boulot ?</label>
+        <div class="q-hint">Ce que tu regardes, lis, écoutes, pratiques en ce moment</div>
+        <input type="text" id="p1-conso" placeholder="Ex : les matchs de Ligue 1, des podcasts true crime, des mangas..." />
+      </div>
+
+      <div class="divider"></div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="go('s-cover')">←</button>
+        <button class="btn-primary" style="flex:1;margin-top:0" onclick="nextP1()">Phase suivante →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PHASE 2 ══════════════════ -->
+    <div class="screen" id="s-p2">
+      <div class="phase-badge">Phase 02 / 04</div>
+      <h2>Ton expertise distillée</h2>
+      <p class="sub">Maintenant on zoome sur ton métier. Trois questions courtes pour extraire l'essentiel de ce que tu apportes vraiment.</p>
+
+      <div class="q-block">
+        <label class="q-label">Quelle est LA chose que tu corriges ou enseignes en boucle à tes clients ?</label>
+        <div class="q-hint">Ce que tu répètes à chaque accompagnement, la leçon que tout le monde doit entendre</div>
+        <textarea id="p2-enseignement" placeholder="Ex : que le profil LinkedIn doit parler aux clients, pas aux pairs..."></textarea>
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Quel est ton "avant/après" signature ?</label>
+        <div class="q-hint">Ce qui change concrètement grâce à toi — en une phrase</div>
+        <input type="text" id="p2-avantapres" placeholder="Ex : avant invisible sur LinkedIn, après reconnu par ses clients idéaux..." />
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Quelle erreur te fait grimacer quand tu la vois ?</label>
+        <div class="q-hint">Celle que tu vois partout et qui t'énerve parce que la solution est si évidente</div>
+        <textarea id="p2-erreur" placeholder="Ex : un profil rempli de termes techniques que les clients ne comprennent pas..."></textarea>
+      </div>
+
+      <div class="divider"></div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="go('s-p1')">←</button>
+        <button class="btn-primary" style="flex:1;margin-top:0" onclick="nextP2()">Phase suivante →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PHASE 3 ══════════════════ -->
+    <div class="screen" id="s-p3">
+      <div class="phase-badge blue">Phase 03 / 04</div>
+      <h2>Le pont</h2>
+      <p class="sub">On relie maintenant ton univers à ton expertise. Tes réponses sont là — pas besoin d'y retourner.</p>
+
+      <div class="recall-section">
+        <div class="recall-label">Ton univers</div>
+        <div class="recall-chips" id="recall-passions"></div>
+      </div>
+
+      <div class="recall-section">
+        <div class="recall-label">Ce que tu corriges / enseignes</div>
+        <div class="recall-box" id="recall-enseignement"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="q-block">
+        <label class="q-label">Comment tu décrirais <span id="p3-erreur-ref" style="color:var(--blue)"></span> en utilisant les mots ou les personnages de ton univers ?</label>
+        <div class="q-hint">Laisse-toi aller — c'est souvent là que le format émerge spontanément</div>
+        <textarea id="p3-description" placeholder="Ex : c'est comme un carton rouge en foot — l'arbitre siffle une faute grave..."></textarea>
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Quels personnages, objets ou rituels de ton univers peuvent représenter tes concepts clés ?</label>
+        <div class="q-hint">Cherche les équivalents : qui joue le rôle de l'expert ? Qu'est-ce qui représente l'erreur ? Le progrès ?</div>
+        <textarea id="p3-mapping" placeholder="Ex : l'arbitre = moi, le carton rouge = erreur grave, le carton jaune = erreur légère..."></textarea>
+      </div>
+
+      <div class="q-block">
+        <label class="q-label">Donne un nom provisoire à ton format</label>
+        <div class="q-hint">Pas besoin que ce soit parfait — juste une piste. Tu peux le changer plus tard.</div>
+        <input type="text" id="p3-nom" placeholder="Ex : La VAR LinkedIn, Le Carton Rouge SEO, Le Spectre Culinaire..." />
+      </div>
+
+      <div class="divider"></div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="go('s-p2')">←</button>
+        <button class="btn-primary" style="flex:1;margin-top:0" onclick="nextP3()">Tester mon format →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PHASE 4 ══════════════════ -->
+    <div class="screen" id="s-p4">
+      <div class="phase-badge">Phase 04 / 04</div>
+      <h2>Le test du vol raté</h2>
+      <p class="sub">Un format signature doit être protégé par toi-même. Coche chaque critère honnêtement — les trois doivent passer.</p>
+
+      <div class="check-list">
+        <div class="check-item" id="check-1" onclick="toggleCheck('check-1')">
+          <div class="check-box"><span class="check-icon">✓</span></div>
+          <div class="check-text"><strong>Ancre personnelle réelle.</strong> Mon format est lié à quelque chose qui me définit vraiment — pas un thème générique que n'importe qui pourrait adopter.</div>
+        </div>
+        <div class="check-item" id="check-2" onclick="toggleCheck('check-2')">
+          <div class="check-box"><span class="check-icon">✓</span></div>
+          <div class="check-text"><strong>Mécanique récurrente.</strong> Mon format a une structure qui se répète à chaque épisode — le lecteur sait à quoi s'attendre avant même d'avoir lu.</div>
+        </div>
+        <div class="check-item" id="check-3" onclick="toggleCheck('check-3')">
+          <div class="check-box"><span class="check-icon">✓</span></div>
+          <div class="check-text"><strong>Protection par l'authenticité.</strong> Si quelqu'un sans mon background copiait ce format exactement, ça sonnerait faux ou déplacé.</div>
+        </div>
+      </div>
+
+      <div class="test-result" id="test-result"></div>
+
+      <div class="q-block">
+        <label class="q-label">Est-ce qu'il y a quelque chose à ajuster pour que le format soit encore plus personnel ?</label>
+        <div class="q-hint">Optionnel — mais souvent la réponse honnête ici affine tout</div>
+        <textarea id="p4-ajustement" placeholder="Ex : je pourrais intégrer des noms de joueurs spécifiques plutôt que des arbitres génériques..."></textarea>
+      </div>
+
+      <div class="divider"></div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="go('s-p3')">←</button>
+        <button class="btn-blue" onclick="buildSynthesis()">Voir mon format signature →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ FINAL ══════════════════ -->
+    <div class="screen" id="s-final">
+      <div class="phase-badge success">Format trouvé ✓</div>
+      <h2>Ton Format Signature</h2>
+
+      <div class="saving-badge">
+        <div class="saving-dot" id="saving-dot"></div>
+        <span id="saving-text">Synthèse enregistrée</span>
+      </div>
+
+      <p class="sub">C'est ta matière première. Thomas a accès à cette synthèse — vous pourrez l'affiner ensemble lors de votre prochain call.</p>
+
+      <div class="synth-card">
+        <div class="synth-blob synth-blob-1"></div>
+        <div class="synth-blob synth-blob-2"></div>
+        <div class="synth-label">Nom du format</div>
+        <div class="synth-name" id="final-nom">—</div>
+        <div class="synth-row">
+          <div class="synth-tag">Univers</div>
+          <div class="synth-val" id="final-univers">—</div>
+        </div>
+        <div class="synth-row">
+          <div class="synth-tag">Expertise</div>
+          <div class="synth-val" id="final-expertise">—</div>
+        </div>
+        <div class="synth-row">
+          <div class="synth-tag">Pont</div>
+          <div class="synth-val" id="final-pont">—</div>
+        </div>
+      </div>
+
+      <div class="formula-box" id="final-formule"></div>
+
+      <button class="btn-primary" onclick="copyResult()">Copier la synthèse</button>
+      <button class="btn-copy" onclick="resetWorkbook()">Recommencer depuis le début</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Supabase ────────────────────────────────────────────────────
+  // Remplace ces deux valeurs par tes clés Supabase après avoir créé la table
+  const SUPABASE_URL  = 'REMPLACE_PAR_TON_URL_SUPABASE'
+  const SUPABASE_ANON = 'REMPLACE_PAR_TON_ANON_KEY'
+
+  // ── N8N Webhook ─────────────────────────────────────────────────
+  const N8N_WEBHOOK = 'https://n8n.srv1272919.hstgr.cloud/webhook/kalanis-workbook-format-signature'
+
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON)
+
+  // ── State ───────────────────────────────────────────────────────
+  const state = {}
+
+  const SCREEN_PROGRESS = {
+    'cover': 0, 'p1': 18, 'p2': 42, 'p3': 66, 'p4': 88, 'final': 100
+  }
+
+  // ── Navigation ──────────────────────────────────────────────────
+  function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+    document.getElementById(id).classList.add('active')
+    const key = id.replace('s-','')
+    document.getElementById('prog').style.width = (SCREEN_PROGRESS[key] ?? 0) + '%'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // ── Cover → P1 ──────────────────────────────────────────────────
+  function startWorkbook() {
+    state.prenom = v('cover-prenom')
+    state.email  = v('cover-email')
+    go('s-p1')
+  }
+
+  // ── P1 → P2 ─────────────────────────────────────────────────────
+  function nextP1() {
+    state.passions  = v('p1-passions')
+    state.amis      = v('p1-amis')
+    state.analogie  = v('p1-analogie')
+    state.vocab     = v('p1-vocab')
+    state.conso     = v('p1-conso')
+    go('s-p2')
+  }
+
+  // ── P2 → P3 ─────────────────────────────────────────────────────
+  function nextP2() {
+    state.enseignement = v('p2-enseignement')
+    state.avantapres   = v('p2-avantapres')
+    state.erreur       = v('p2-erreur')
+    fillRecall()
+    go('s-p3')
+  }
+
+  function fillRecall() {
+    // Chips passions
+    const chipsEl = document.getElementById('recall-passions')
+    chipsEl.innerHTML = ''
+    const items = state.passions.split(/[,\n]+/).map(s => s.trim()).filter(Boolean).slice(0, 5)
+    if (!items.length && state.amis) items.push(state.amis)
+    items.forEach(p => {
+      const c = document.createElement('div')
+      c.className = 'recall-chip'
+      c.textContent = p
+      chipsEl.appendChild(c)
+    })
+    if (state.vocab) {
+      const c = document.createElement('div')
+      c.className = 'recall-chip'
+      c.textContent = '🗣 ' + state.vocab.slice(0,45) + (state.vocab.length > 45 ? '...' : '')
+      chipsEl.appendChild(c)
+    }
+
+    // Box enseignement
+    document.getElementById('recall-enseignement').textContent =
+      state.enseignement || state.erreur || '(ta réponse phase 2)'
+
+    // Référence erreur dans la question
+    const err = state.erreur || state.enseignement || 'l\'erreur que tu corriges'
+    const ref = '"' + err.slice(0, 55) + (err.length > 55 ? '..."' : '"')
+    document.getElementById('p3-erreur-ref').textContent = ref
+  }
+
+  // ── P3 → P4 ─────────────────────────────────────────────────────
+  function nextP3() {
+    state.description = v('p3-description')
+    state.mapping     = v('p3-mapping')
+    state.nom         = v('p3-nom') || 'Mon Format Signature'
+    go('s-p4')
+  }
+
+  // ── Checklist ───────────────────────────────────────────────────
+  function toggleCheck(id) {
+    document.getElementById(id).classList.toggle('checked')
+    updateTestResult()
+  }
+
+  function updateTestResult() {
+    const checked = ['check-1','check-2','check-3'].filter(id =>
+      document.getElementById(id).classList.contains('checked')
+    ).length
+    const el = document.getElementById('test-result')
+    if (checked === 3) {
+      el.className = 'test-result pass'
+      el.textContent = '✓ Ton format passe le test du vol raté — il est vraiment le tien.'
+    } else if (checked >= 1) {
+      el.className = 'test-result partial'
+      el.textContent = checked + '/3 critères cochés — ton format peut encore être affiné.'
+    } else {
+      el.className = 'test-result'
+    }
+  }
+
+  // ── Synthèse + Supabase ─────────────────────────────────────────
+  async function buildSynthesis() {
+    state.ajustement = v('p4-ajustement')
+    state.test_pass  = ['check-1','check-2','check-3'].filter(id =>
+      document.getElementById(id).classList.contains('checked')
+    ).length
+
+    // Remplir les éléments de synthèse
+    document.getElementById('final-nom').textContent = state.nom
+    const univers = [state.passions, state.amis].filter(Boolean).join(' · ')
+    document.getElementById('final-univers').textContent = univers || '(à compléter)'
+    document.getElementById('final-expertise').textContent = state.avantapres || state.enseignement || '(à compléter)'
+    const pont = state.mapping || state.description || '(à compléter)'
+    document.getElementById('final-pont').textContent = pont.slice(0, 200) + (pont.length > 200 ? '...' : '')
+    const univShort = (state.passions.split(/[,\n]/)[0] || 'mon univers').trim()
+    const expShort  = (state.enseignement || '').slice(0, 80)
+    document.getElementById('final-formule').textContent =
+      `"${state.nom}, c'est un format où j'utilise l'univers de ${univShort} pour analyser et corriger ${expShort}."`
+
+    go('s-final')
+
+    // Supabase save
+    const dot  = document.getElementById('saving-dot')
+    const text = document.getElementById('saving-text')
+    dot.className  = 'saving-dot loading'
+    text.textContent = 'Enregistrement en cours...'
+
+    try {
+      const { error } = await db.from('format_signature').insert({
+        prenom:        state.prenom,
+        email:         state.email,
+        passions:      state.passions,
+        amis:          state.amis,
+        analogie:      state.analogie,
+        vocab:         state.vocab,
+        conso:         state.conso,
+        enseignement:  state.enseignement,
+        avantapres:    state.avantapres,
+        erreur:        state.erreur,
+        description:   state.description,
+        mapping:       state.mapping,
+        nom_format:    state.nom,
+        ajustement:    state.ajustement,
+        test_score:    state.test_pass,
+      })
+      if (error) throw error
+
+      // N8N → Slack
+      const univers   = [state.passions, state.amis].filter(Boolean).join(' · ')
+      const testEmoji = state.test_pass === 3 ? '✅' : state.test_pass >= 1 ? '⚠️' : '❌'
+      const testLabel = state.test_pass === 3 ? 'Passe le test (3/3)' : `${state.test_pass}/3 critères`
+
+      await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prenom:       state.prenom || 'Anonyme',
+          email:        state.email  || '—',
+          nom_format:   state.nom,
+          univers,
+          expertise:    state.avantapres || state.enseignement || '—',
+          pont:         state.mapping    || state.description  || '—',
+          erreur:       state.erreur     || '—',
+          test_score:   state.test_pass,
+          test_label:   testLabel,
+          test_emoji:   testEmoji,
+          ajustement:   state.ajustement || '—',
+        })
+      }).catch(() => {}) // silencieux si N8N KO
+
+      dot.className  = 'saving-dot'
+      text.textContent = 'Synthèse enregistrée — Thomas peut la consulter avant votre call.'
+    } catch(e) {
+      dot.className  = 'saving-dot'
+      dot.style.background = '#EA580C'
+      text.textContent = 'Enregistrement échoué — copie ta synthèse ci-dessous.'
+    }
+  }
+
+  // ── Copy ────────────────────────────────────────────────────────
+  function copyResult() {
+    const univers   = [state.passions, state.amis].filter(Boolean).join(' · ')
+    const pont      = (state.mapping || state.description || '').slice(0, 300)
+    const univShort = (state.passions.split(/[,\n]/)[0] || 'mon univers').trim()
+    const expShort  = (state.enseignement || '').slice(0, 80)
+
+    const text = [
+      'FORMAT SIGNATURE — ' + state.nom,
+      '',
+      'UNIVERS : ' + univers,
+      'EXPERTISE : ' + (state.avantapres || state.enseignement),
+      'PONT / MECANIQUE : ' + pont,
+      '',
+      'FORMULE : "' + state.nom + ', c\'est un format où j\'utilise l\'univers de ' + univShort + ' pour analyser et corriger ' + expShort + '."',
+      state.ajustement ? '\nNOTES : ' + state.ajustement : '',
+    ].join('\n')
+
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.target
+      btn.textContent = 'Copié ✓'
+      setTimeout(() => btn.textContent = 'Copier la synthèse', 2000)
+    })
+  }
+
+  // ── Reset ────────────────────────────────────────────────────────
+  function resetWorkbook() {
+    document.querySelectorAll('input, textarea').forEach(el => el.value = '')
+    ;['check-1','check-2','check-3'].forEach(id =>
+      document.getElementById(id).classList.remove('checked')
+    )
+    document.getElementById('test-result').className = 'test-result'
+    Object.keys(state).forEach(k => delete state[k])
+    go('s-cover')
+  }
+
+  // ── Helper ───────────────────────────────────────────────────────
+  function v(id) { return document.getElementById(id)?.value?.trim() || '' }
+</script>
+</body>
+</html>
