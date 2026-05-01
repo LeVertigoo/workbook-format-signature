@@ -501,7 +501,7 @@
 
   // ── N8N Webhook ─────────────────────────────────────────────────
   const N8N_WEBHOOK   = 'https://n8n.srv1272919.hstgr.cloud/webhook/kalanis-workbook-format-signature'
-  const WORKBOOK_URL  = 'https://workbook-format-signature.vercel.app/' // ex : https://workbook-format-signature.vercel.app
+  const WORKBOOK_URL  = 'https://workbook-organisation.vercel.app/' // ex : https://workbook-format-signature.vercel.app
 
   const { createClient } = supabase
   const db = createClient(SUPABASE_URL, SUPABASE_ANON)
@@ -635,7 +635,7 @@
     text.textContent = 'Enregistrement en cours...'
 
     try {
-      const { error } = await db.from('format_signature').insert({
+      const { data, error } = await db.from('format_signature').insert({
         nom:           state.nom,
         email:         state.email,
         passions:      state.passions,
@@ -648,33 +648,23 @@
         erreur:        state.erreur,
         description:   state.description,
         mapping:       state.mapping,
-        nom_format:    state.nom,
+        nom_format:    state.nom_format,
         ajustement:    state.ajustement,
         test_score:    state.test_pass,
-      })
+      }).select()
       if (error) throw error
 
-      // N8N → Slack
-      const univers   = [state.passions, state.amis].filter(Boolean).join(' · ')
-      const testEmoji = state.test_pass === 3 ? '✅' : state.test_pass >= 1 ? '⚠️' : '❌'
-      const testLabel = state.test_pass === 3 ? 'Passe le test (3/3)' : `${state.test_pass}/3 critères`
+      // Construire l'URL unique avec l'ID de la ligne Supabase
+      const rowId    = data[0].id
+      const html_url = `${window.location.origin}?view=${rowId}`
 
+      // N8N → Slack
       await fetch(N8N_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nom:          state.nom   || 'Anonyme',
-          email:        state.email || '—',
-          html_url:     WORKBOOK_URL,
-          nom_format:   state.nom_format,
-          univers,
-          expertise:    state.avantapres || state.enseignement || '—',
-          pont:         state.mapping    || state.description  || '—',
-          erreur:       state.erreur     || '—',
-          test_score:   state.test_pass,
-          test_label:   testLabel,
-          test_emoji:   testEmoji,
-          ajustement:   state.ajustement || '—',
+          nom:      state.nom || 'Anonyme',
+          html_url,
         })
       }).catch(() => {}) // silencieux si N8N KO
 
@@ -725,6 +715,45 @@
 
   // ── Helper ───────────────────────────────────────────────────────
   function v(id) { return document.getElementById(id)?.value?.trim() || '' }
+
+  // ── Mode vue (?view=ID) ──────────────────────────────────────────
+  const viewId = new URLSearchParams(window.location.search).get('view')
+  if (viewId) {
+    db.from('format_signature').select('*').eq('id', viewId).single().then(({ data }) => {
+      if (!data) return
+      Object.assign(state, {
+        nom:          data.nom,
+        email:        data.email,
+        passions:     data.passions,
+        amis:         data.amis,
+        analogie:     data.analogie,
+        vocab:        data.vocab,
+        conso:        data.conso,
+        enseignement: data.enseignement,
+        avantapres:   data.avantapres,
+        erreur:       data.erreur,
+        description:  data.description,
+        mapping:      data.mapping,
+        nom_format:   data.nom_format,
+        ajustement:   data.ajustement,
+        test_pass:    data.test_score,
+      })
+      // Afficher directement la synthèse
+      document.getElementById('final-nom').textContent = data.nom_format || '—'
+      const univers = [data.passions, data.amis].filter(Boolean).join(' · ')
+      document.getElementById('final-univers').textContent  = univers || '—'
+      document.getElementById('final-expertise').textContent = data.avantapres || data.enseignement || '—'
+      const pont = data.mapping || data.description || '—'
+      document.getElementById('final-pont').textContent = pont.slice(0, 200) + (pont.length > 200 ? '...' : '')
+      const univShort = (data.passions || '').split(/[,\n]/)[0].trim() || 'son univers'
+      const expShort  = (data.enseignement || '').slice(0, 80)
+      document.getElementById('final-formule').textContent =
+        `"${data.nom_format}, c'est un format où j'utilise l'univers de ${univShort} pour analyser et corriger ${expShort}."`
+      document.getElementById('saving-text').textContent = `Réponses de ${data.nom || 'ce client'}`
+      document.getElementById('saving-dot').style.background = '#018EBB'
+      go('s-final')
+    })
+  }
 </script>
 </body>
 </html>
