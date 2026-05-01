@@ -500,7 +500,8 @@
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbHlmb2h1ZWJnYnV6dGpxYW9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTgxODQsImV4cCI6MjA5MTgzNDE4NH0.HKqxiTKQDV8zvfpTmE8RlDq_GsbwHATzfn1gyDkJLxQ'
 
   // ── N8N Webhook ─────────────────────────────────────────────────
-  const N8N_WEBHOOK = 'https://n8n.srv1272919.hstgr.cloud/webhook/kalanis-workbook-format-signature'
+  const N8N_WEBHOOK   = 'https://n8n.srv1272919.hstgr.cloud/webhook/kalanis-workbook-format-signature'
+  const WORKBOOK_URL  = 'https://workbook-format-signature.vercel.app/' // ex : https://workbook-format-signature.vercel.app
 
   const { createClient } = supabase
   const db = createClient(SUPABASE_URL, SUPABASE_ANON)
@@ -664,6 +665,7 @@
         body: JSON.stringify({
           nom:          state.nom   || 'Anonyme',
           email:        state.email || '—',
+          html_url:     WORKBOOK_URL,
           nom_format:   state.nom_format,
           univers,
           expertise:    state.avantapres || state.enseignement || '—',
