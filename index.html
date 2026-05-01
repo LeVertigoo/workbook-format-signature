@@ -580,7 +580,7 @@
   function nextP3() {
     state.description = v('p3-description')
     state.mapping     = v('p3-mapping')
-    state.nom         = v('p3-nom') || 'Mon Format Signature'
+    state.nom_format  = v('p3-nom') || 'Mon Format Signature'
     go('s-p4')
   }
 
@@ -614,7 +614,7 @@
     ).length
 
     // Remplir les éléments de synthèse
-    document.getElementById('final-nom').textContent = state.nom
+    document.getElementById('final-nom').textContent = state.nom_format
     const univers = [state.passions, state.amis].filter(Boolean).join(' · ')
     document.getElementById('final-univers').textContent = univers || '(à compléter)'
     document.getElementById('final-expertise').textContent = state.avantapres || state.enseignement || '(à compléter)'
@@ -623,7 +623,7 @@
     const univShort = (state.passions.split(/[,\n]/)[0] || 'mon univers').trim()
     const expShort  = (state.enseignement || '').slice(0, 80)
     document.getElementById('final-formule').textContent =
-      `"${state.nom}, c'est un format où j'utilise l'univers de ${univShort} pour analyser et corriger ${expShort}."`
+      `"${state.nom_format}, c'est un format où j'utilise l'univers de ${univShort} pour analyser et corriger ${expShort}."`
 
     go('s-final')
 
@@ -664,7 +664,7 @@
         body: JSON.stringify({
           nom:          state.nom   || 'Anonyme',
           email:        state.email || '—',
-          nom_format:   state.nom,
+          nom_format:   state.nom_format,
           univers,
           expertise:    state.avantapres || state.enseignement || '—',
           pont:         state.mapping    || state.description  || '—',
@@ -693,13 +693,13 @@
     const expShort  = (state.enseignement || '').slice(0, 80)
 
     const text = [
-      'FORMAT SIGNATURE — ' + state.nom,
+      'FORMAT SIGNATURE — ' + state.nom_format,
       '',
       'UNIVERS : ' + univers,
       'EXPERTISE : ' + (state.avantapres || state.enseignement),
       'PONT / MECANIQUE : ' + pont,
       '',
-      'FORMULE : "' + state.nom + ', c\'est un format où j\'utilise l\'univers de ' + univShort + ' pour analyser et corriger ' + expShort + '."',
+      'FORMULE : "' + state.nom_format + ', c\'est un format où j\'utilise l\'univers de ' + univShort + ' pour analyser et corriger ' + expShort + '."',
       state.ajustement ? '\nNOTES : ' + state.ajustement : '',
     ].join('\n')
 
