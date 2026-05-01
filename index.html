@@ -269,8 +269,8 @@
 
       <div class="input-row">
         <div>
-          <label class="q-label">Ton prénom</label>
-          <input type="text" id="cover-prenom" placeholder="Marie" />
+          <label class="q-label">Ton prénom et nom</label>
+          <input type="text" id="cover-nom" placeholder="Marie Dupont" />
         </div>
         <div>
           <label class="q-label">Ton email</label>
@@ -523,8 +523,8 @@
 
   // ── Cover → P1 ──────────────────────────────────────────────────
   function startWorkbook() {
-    state.prenom = v('cover-prenom')
-    state.email  = v('cover-email')
+    state.nom   = v('cover-nom')
+    state.email = v('cover-email')
     go('s-p1')
   }
 
@@ -635,7 +635,7 @@
 
     try {
       const { error } = await db.from('format_signature').insert({
-        prenom:        state.prenom,
+        nom:           state.nom,
         email:         state.email,
         passions:      state.passions,
         amis:          state.amis,
@@ -662,8 +662,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prenom:       state.prenom || 'Anonyme',
-          email:        state.email  || '—',
+          nom:          state.nom   || 'Anonyme',
+          email:        state.email || '—',
           nom_format:   state.nom,
           univers,
           expertise:    state.avantapres || state.enseignement || '—',
