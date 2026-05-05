@@ -429,6 +429,18 @@
       <div class="admin-meta" id="admin-meta"></div>
     </div>
 
+    <div class="synth-card" style="margin-bottom:1.4rem">
+      <div class="synth-blob synth-blob-1"></div>
+      <div class="synth-blob synth-blob-2"></div>
+      <div class="synth-label">Format Signature</div>
+      <div class="synth-name" id="admin-nom-format">—</div>
+      <div class="synth-row"><div class="synth-tag">Univers</div><div class="synth-val" id="admin-ancre">—</div></div>
+      <div class="synth-row"><div class="synth-tag">Expert</div><div class="synth-val" id="admin-map-expert">—</div></div>
+      <div class="synth-row"><div class="synth-tag">Erreur</div><div class="synth-val" id="admin-map-erreur">—</div></div>
+      <div class="synth-row"><div class="synth-tag">Résultat</div><div class="synth-val" id="admin-map-resultat">—</div></div>
+    </div>
+    <div class="formula-box" id="admin-formule" style="margin-bottom:1.4rem"></div>
+
     <div class="admin-section">
       <div class="admin-section-title">Phase 1 — Univers</div>
       <div class="admin-rows">
@@ -710,6 +722,15 @@
         <span class="admin-meta-chip">Test : ${score}/3</span>
         <span class="admin-meta-chip">${new Date(d.created_at).toLocaleDateString('fr-FR')}</span>
       `
+
+      // Carte synthèse
+      document.getElementById('admin-nom-format').textContent = a(d.nom_format)
+      document.getElementById('admin-ancre').textContent      = a(d.ancre)
+      document.getElementById('admin-map-expert').textContent = a(d.map_expert)
+      document.getElementById('admin-map-erreur').textContent = a(d.map_erreur)
+      document.getElementById('admin-map-resultat').textContent = a(d.map_resultat)
+      document.getElementById('admin-formule').textContent    =
+        `"${a(d.nom_format)} : ${a(d.map_expert)} analyse ${a(d.map_erreur)} pour que le client atteigne ${a(d.map_resultat)}."`
 
       // Remplir toutes les réponses
       const fill = (id, val) => {
