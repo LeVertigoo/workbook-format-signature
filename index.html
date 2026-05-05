@@ -416,7 +416,7 @@
       <div class="synth-row"><div class="synth-tag">Résultat</div><div class="synth-val" id="final-resultat">—</div></div>
     </div>
     <div class="formula-box" id="final-formule"></div>
-    <button class="btn-primary" onclick="copyResult()">Copier la synthèse</button>
+    <button class="btn-primary" onclick="downloadResult()">Télécharger la synthèse</button>
     <button class="btn-outline" onclick="resetWorkbook()">Recommencer depuis le début</button>
   </div>
 
@@ -675,24 +675,62 @@
     }
   }
 
-  // ── Copy ─────────────────────────────────────────────────────────
-  function copyResult() {
-    const text = [
-      'FORMAT SIGNATURE — ' + state.nom_format,
+  // ── Download ──────────────────────────────────────────────────────
+  function buildTextContent(s) {
+    return [
+      '══════════════════════════════════════',
+      '  FORMAT SIGNATURE — ' + s.nom_format,
+      '══════════════════════════════════════',
       '',
-      'UNIVERS : ' + state.ancre,
-      'EXPERT : ' + state.map_expert,
-      'ERREUR : ' + state.map_erreur,
-      'RÉSULTAT : ' + state.map_resultat,
+      'CLIENT     : ' + s.nom,
+      'EMAIL      : ' + s.email,
       '',
-      'FORMULE : "' + state.nom_format + ' : ' + state.map_expert + ' analyse ' + state.map_erreur + ' pour que le client atteigne ' + state.map_resultat + '."',
-      state.ajustement ? '\nNOTES : ' + state.ajustement : '',
+      '── UNIVERS ────────────────────────────',
+      'Passions   : ' + s.passions,
+      'Vu par ses amis : ' + s.amis,
+      'Analogie   : ' + s.analogie,
+      'Vocabulaire : ' + s.vocab,
+      'Consomme   : ' + s.conso,
+      '',
+      '── ANCRE CHOISIE ──────────────────────',
+      s.ancre,
+      '',
+      '── EXPERTISE ──────────────────────────',
+      'Enseigne en boucle : ' + s.enseignement,
+      'Avant / après      : ' + s.avantapres,
+      'Erreur grimaçante  : ' + s.erreur,
+      '',
+      '── MAPPING ────────────────────────────',
+      '🎯 Expert   : ' + s.map_expert,
+      '⚠️  Erreur   : ' + s.map_erreur,
+      '✅ Résultat : ' + s.map_resultat,
+      '',
+      '── FORMULE ────────────────────────────',
+      '"' + s.nom_format + ' : ' + s.map_expert + ' analyse ' + s.map_erreur + ' pour que le client atteigne ' + s.map_resultat + '."',
+      s.ajustement ? '\nNOTES : ' + s.ajustement : '',
+      '',
+      '══════════════════════════════════════',
     ].join('\n')
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = event.target
-      btn.textContent = 'Copié ✓'
-      setTimeout(() => btn.textContent = 'Copier la synthèse', 2000)
+  }
+
+  function downloadResult() {
+    const text = buildTextContent({
+      nom_format: state.nom_format, nom: state.nom, email: state.email,
+      passions: state.passions, amis: state.amis, analogie: state.analogie,
+      vocab: state.vocab, conso: state.conso, ancre: state.ancre,
+      enseignement: state.enseignement, avantapres: state.avantapres, erreur: state.erreur,
+      map_expert: state.map_expert, map_erreur: state.map_erreur, map_resultat: state.map_resultat,
+      ajustement: state.ajustement,
     })
+    triggerDownload(text, 'format-signature-' + (state.nom || 'client').toLowerCase().replace(/\s+/g, '-') + '.txt')
+  }
+
+  function triggerDownload(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url; a.download = filename; a.click()
+    URL.revokeObjectURL(url)
   }
 
   // ── Reset ────────────────────────────────────────────────────────
@@ -753,6 +791,28 @@
       fill('adm-map-resultat',d.map_resultat)
       fill('adm-nom-format',  d.nom_format)
       fill('adm-ajustement',  d.ajustement)
+
+      // Bouton télécharger dans la vue admin
+      const existing = document.getElementById('admin-dl-btn')
+      if (!existing) {
+        const btn = document.createElement('button')
+        btn.id = 'admin-dl-btn'
+        btn.className = 'btn-primary'
+        btn.style.marginTop = '1rem'
+        btn.textContent = 'Télécharger la fiche complète'
+        btn.onclick = () => {
+          const text = buildTextContent({
+            nom_format: d.nom_format, nom: d.nom, email: d.email,
+            passions: d.passions, amis: d.amis, analogie: d.analogie,
+            vocab: d.vocab, conso: d.conso, ancre: d.ancre,
+            enseignement: d.enseignement, avantapres: d.avantapres, erreur: d.erreur,
+            map_expert: d.map_expert, map_erreur: d.map_erreur, map_resultat: d.map_resultat,
+            ajustement: d.ajustement,
+          })
+          triggerDownload(text, 'format-signature-' + (d.nom || 'client').toLowerCase().replace(/\s+/g, '-') + '.txt')
+        }
+        document.getElementById('s-admin').appendChild(btn)
+      }
 
       // Test chips
       const labels = ['Ancre personnelle', 'Mécanique récurrente', 'Protection authenticité']
